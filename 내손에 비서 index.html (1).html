@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>내손에 비서 - 스마트 결정 도우미</title>
+  <style>
+    /* ==========================================================================
+       CSS Variables & Themes
+       ========================================================================== */
+    :root {
+      --font-main: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 1. 깔끔한 블랙/화이트 톤 */
+    body[data-theme="bw"] {
+      --bg-body: #0d0f12;
+      --bg-card: #17191e;
+      --bg-card-hover: #1f232b;
+      --bg-input: #232730;
+      --border-color: #2e3440;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #ffffff;
+      --primary-text: #0d0f12;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.12);
+      --badge-bg: #222733;
+      --chat-bot-bg: #222631;
+      --chat-user-bg: #ffffff;
+      --chat-user-text: #0d0f12;
+      --shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      --modal-overlay: rgba(0, 0, 0, 0.75);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    /* 2. 파스텔 톤 (귀엽고 산뜻한 마스코트 디자인) */
+    body[data-theme="pastel"] {
+      --bg-body: #fdf8f5;
+      --bg-card: #ffffff;
+      --bg-card-hover: #fff5f7;
+      --bg-input: #f7eff3;
+      --border-color: #f1dbe5;
+      --text-main: #4a3e4d;
+      --text-muted: #8e7a8f;
+      --primary: #ff85a1;
+      --primary-text: #ffffff;
+      --accent: #ff9ebb;
+      --accent-soft: #ffeef2;
+      --badge-bg: #ffe5ec;
+      --chat-bot-bg: #f9edf3;
+      --chat-user-bg: #ff85a1;
+      --chat-user-text: #ffffff;
+      --shadow: 0 10px 25px rgba(230, 185, 205, 0.35);
+      --modal-overlay: rgba(74, 62, 77, 0.45);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      transition: background-color 0.3s ease, color 0.3s ease;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Mascot Elements */
+    .mascot-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .pastel-only {
+      display: none;
+    }
+    body[data-theme="pastel"] .pastel-only {
+      display: inline-block;
+    }
+
+    /* Layout */
+    .app-container {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mascot-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent-soft);
+      border: 2px solid var(--border-color);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .brand-title h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-title p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-action {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+    }
+
+    .btn-action:hover {
+      filter: brightness(1.1);
+    }
+
+    /* User Profile Summary Bar */
+    .user-profile-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 0.84rem;
+    }
+
+    .user-profile-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .badge {
+      background: var(--badge-bg);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    /* 4 Decision Cards Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 992px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 580px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .quick-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .quick-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent);
+      background: var(--bg-card-hover);
+    }
+
+    .quick-card .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .quick-card .card-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+
+    .quick-card .card-tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      background: var(--accent-soft);
+      color: var(--text-main);
+      border-radius: var(--radius-sm);
+    }
+
+    .quick-card .card-body h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .quick-card .card-body p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .quick-card .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--accent);
+      font-weight: 600;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    /* Main Workspace Layout */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Tool Panels */
+    .tools-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: var(--transition);
+    }
+
+    .tab-btn.active {
+      color: var(--text-main);
+      background: var(--accent-soft);
+      border: 1px solid var(--border-color);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .tool-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      font-size: 0.88rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .input-field:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--primary-text);
+      border: none;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+
+    .result-box {
+      margin-top: 10px;
+      padding: 14px;
+      background: var(--bg-input);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    /* Chat Assistant Panel */
+    .chat-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      height: 490px;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+    }
+
+    .chat-header-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-header h2 {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .chat-header span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message {
+      display: flex;
+      gap: 8px;
+      max-width: 88%;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .message.bot {
+      align-self: flex-start;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .msg-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .message.bot .msg-bubble {
+      background: var(--chat-bot-bg);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      border-top-left-radius: 2px;
+    }
+
+    .message.user .msg-bubble {
+      background: var(--chat-user-bg);
+      color: var(--chat-user-text);
+      font-weight: 600;
+      border-top-right-radius: 2px;
+    }
+
+    .quick-chips {
+      display: flex;
+      gap: 6px;
+      padding: 6px 14px;
+      overflow-x: auto;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-card);
+    }
+
+    .chip-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 0.74rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: var(--transition);
+    }
+
+    .chip-btn:hover {
+      color: var(--text-main);
+      border-color: var(--accent);
+    }
+
+    .chat-input-area {
+      padding: 12px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 8px;
+      background: var(--bg-card);
+    }
+
+    /* Modal / Popups */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--modal-overlay);
+      backdrop-filter: blur(5px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-window {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 620px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      animation: modalUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 18px;
+      right: 20px;
+      background: transparent;
+      border: none;
+      font-size: 1.4rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
+    /* Onboarding Modal Form */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.84rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .option-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 8px;
+    }
+
+    .option-btn {
+      position: relative;
+    }
+
+    .option-btn input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .option-btn label {
+      display: block;
+      text-align: center;
+      padding: 8px 10px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .option-btn input:checked + label {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--text-main);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    /* Theme Selector in Onboarding */
+    .theme-selector-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .theme-card {
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: var(--transition);
+      background: var(--bg-input);
+    }
+
+    .theme-card.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .theme-card-preview {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    /* Modal Content Specifics */
+    .detail-section {
+      background: var(--bg-input);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      padding: 14px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+    }
+
+    .detail-section h4 {
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--accent);
+    }
+
+    .schedule-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px dashed var(--border-color);
+    }
+
+    .schedule-item:last-child {
+      border-bottom: none;
+    }
+
+    .travel-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes modalUp {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+  </style>
+</head>
+<body data-theme="bw">
+
+  <!-- SVG Mascot Defs (Cute Bunny) -->
+  <svg style="display:none;">
+    <symbol id="bunny-mascot" viewBox="0 0 100 100">
+      <ellipse cx="38" cy="28" rx="8" ry="24" fill="#ffccd5" transform="rotate(-10 38 28)"/>
+      <ellipse cx="38" cy="28" rx="4" ry="16" fill="#ff85a1" transform="rotate(-10 38 28)"/>
+      <ellipse cx="62" cy="28" rx="8" ry="24" fill="#ffccd5" transform="rotate(10 62 28)"/>
+      <ellipse cx="62" cy="28" rx="4" ry="16" fill="#ff85a1" transform="rotate(10 62 28)"/>
+      <circle cx="50" cy="58" r="30" fill="#ffffff" stroke="#ffccd5" stroke-width="2"/>
+      <circle cx="41" cy="55" r="3.5" fill="#4a3e4d"/>
+      <circle cx="59" cy="55" r="3.5" fill="#4a3e4d"/>
+      <circle cx="42" cy="53" r="1.2" fill="#ffffff"/>
+      <circle cx="60" cy="53" r="1.2" fill="#ffffff"/>
+      <polygon points="50,61 46,65 54,65" fill="#ff85a1"/>
+      <path d="M46 67 Q50 71 54 67" stroke="#8e7a8f" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <ellipse cx="33" cy="62" rx="4" ry="2.5" fill="#ffb3c1" opacity="0.6"/>
+      <ellipse cx="67" cy="62" rx="4" ry="2.5" fill="#ffb3c1" opacity="0.6"/>
+      <circle cx="34" cy="40" r="4" fill="#ffeb99"/>
+    </symbol>
+    <symbol id="robot-mascot" viewBox="0 0 100 100">
+      <rect x="25" y="32" width="50" height="42" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-width="3"/>
+      <line x1="50" y1="18" x2="50" y2="32" stroke="#38bdf8" stroke-width="3"/>
+      <circle cx="50" cy="15" r="5" fill="#38bdf8"/>
+      <rect x="34" y="44" width="10" height="7" rx="3.5" fill="#38bdf8"/>
+      <rect x="56" y="44" width="10" height="7" rx="3.5" fill="#38bdf8"/>
+      <line x1="42" y1="62" x2="58" y2="62" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"/>
+    </symbol>
+  </svg>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="mascot-avatar">
+          <svg class="mascot-svg">
+            <use id="headerMascotUse" href="#robot-mascot"></use>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <h1>내손에 비서 <span class="pastel-only" style="font-size:0.8rem;">✨</span></h1>
+          <p>고민 없는 하루를 만드는 스마트 결정 도우미</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-action" onclick="toggleTheme()" title="화면 테마 변경">
+          <span id="themeBtnIcon">🎨</span> <span id="themeBtnText">테마 전환</span>
+        </button>
+        <button class="btn-action" onclick="openOnboardingModal()">
+          <span>⚙️</span> 취향 재설정
+        </button>
+      </div>
+    </header>
+
+    <!-- Profile Summary Status Bar -->
+    <div class="user-profile-bar" id="profileBar">
+      <div class="user-profile-tags" id="profileTags">
+        <!-- Rendered by JS -->
+      </div>
+      <span style="color:var(--text-muted); font-size:0.75rem;">💡 프로필에 맞춰 카드가 매일 최적화됩니다</span>
+    </div>
+
+    <!-- 4 Direct Decision Cards -->
+    <div class="dashboard-grid">
+      <!-- 1. 오늘 메뉴 -->
+      <div class="quick-card" onclick="openFoodModal()">
+        <div class="card-head">
+          <span class="card-icon">🍱</span>
+          <span class="card-tag">오늘의 추천</span>
+        </div>
+        <div class="card-body">
+          <h3 id="cardFoodTitle">취향 저격 메뉴</h3>
+          <p id="cardFoodDesc">개인 선호도를 반영한 오늘의 1픽 메뉴를 확인하세요.</p>
+        </div>
+        <div class="card-footer">
+          <span>상세 정보 및 즉시 변경</span>
+          <span>➜</span>
+        </div>
+      </div>
+
+      <!-- 2. 맞춤 운동 & 식단 루틴 -->
+      <div class="quick-card" onclick="openWorkoutModal()">
+        <div class="card-head">
+          <span class="card-icon">⚡</span>
+          <span class="card-tag">체형 맞춤</span>
+        </div>
+        <div class="card-body">
+          <h3 id="cardWorkoutTitle">집중 부위 루틴</h3>
+          <p id="cardWorkoutDesc">선택하신 고민 부위를 집중 관리하는 3일 운동 플랜.</p>
+        </div>
+        <div class="card-footer">
+          <span>3일+ 플랜 & 식단 보기</span>
+          <span>➜</span>
+        </div>
+      </div>
+
+      <!-- 3. 작업 / 공부 순서 -->
+      <div class="quick-card" onclick="openRoutineModal()">
+        <div class="card-head">
+          <span class="card-icon">⏱️</span>
+          <span class="card-tag">생산성 최적화</span>
+        </div>
+        <div class="card-body">
+          <h3 id="cardRoutineTitle">작업 & 집중 순서</h3>
+          <p id="cardRoutineDesc">직업 맞춤형 뇌 피로도 최소화 실행 가이드.</p>
+        </div>
+        <div class="card-footer">
+          <span>타임블록 플랜 확인</span>
+          <span>➜</span>
+        </div>
+      </div>
+
+      <!-- 4. 주말 여행지 -->
+      <div class="quick-card" onclick="openTravelModal()">
+        <div class="card-head">
+          <span class="card-icon">🚗</span>
+          <span class="card-tag">주말 힐링</span>
+        </div>
+        <div class="card-body">
+          <h3 id="cardTravelTitle">추천 여행지</h3>
+          <p id="cardTravelDesc">이번 주말 훌쩍 떠나기 좋은 힐링 명소와 코스.</p>
+        </div>
+        <div class="card-footer">
+          <span>현장 사진 & 사이트 바로가기</span>
+          <span>➜</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Workspace: Decision Tools & AI Chat Assistant -->
+    <div class="workspace-grid">
+      <!-- Left: Interactive Decision Tools -->
+      <div class="tools-container">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab('fridge')">🧊 냉장고 재료 맞춤</button>
+          <button class="tab-btn" onclick="switchTab('schedule')">📅 3일 루틴 스케줄러</button>
+          <button class="tab-btn" onclick="switchTab('priority')">📋 할 일 우선순위</button>
+          <button class="tab-btn" onclick="switchTab('balance')">⚖️ 양자택일 밸런스</button>
+        </div>
+
+        <!-- Tab 1: 냉장고 재료 추천 -->
+        <div class="tab-content active" id="tab-fridge">
+          <div class="tool-box">
+            <label class="form-label">집에 있는 재료를 쉼표나 띄어쓰기로 적어주세요:</label>
+            <input type="text" id="fridgeInput" class="input-field" placeholder="예: 김치, 계란, 두부, 양파, 참치">
+            <button class="btn-primary" onclick="recommendByFridge()">🍳 최적의 집밥 레시피 결정</button>
+            <div id="fridgeResult" class="result-box" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Tab 2: 3일 스케줄 관리 -->
+        <div class="tab-content" id="tab-schedule">
+          <div class="tool-box">
+            <p style="font-size:0.83rem; color:var(--text-muted); margin-bottom:4px;">
+              현재 선택된 고민 부위에 맞춰 자동으로 생성된 스케줄입니다.
+            </p>
+            <div id="schedulePlanList" style="display:flex; flex-direction:column; gap:8px;"></div>
+            <button class="btn-primary" onclick="generateSchedule()">🔄 루틴 새로고침</button>
+          </div>
+        </div>
+
+        <!-- Tab 3: 할 일 우선순위 -->
+        <div class="tab-content" id="tab-priority">
+          <div class="tool-box">
+            <label class="form-label">오늘 해야 할 일들을 편하게 나열해주세요:</label>
+            <textarea id="todoInput" class="input-field" rows="3" placeholder="예: 보고서 작성, 영어 단어 30개, 이메일 회신, 운동 40분"></textarea>
+            <button class="btn-primary" onclick="sortPriorities()">⚡ 뇌가 편한 순서로 정렬하기</button>
+            <div id="priorityResult" class="result-box" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Tab 4: 양자택일 밸런스 결정 -->
+        <div class="tab-content" id="tab-balance">
+          <div class="tool-box">
+            <label class="form-label">고민되는 두 가지 선택지를 입력하세요:</label>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="choiceA" class="input-field" placeholder="선택 A (예: 짜장면)">
+              <span style="display:flex; align-items:center; font-weight:800; color:var(--accent);">VS</span>
+              <input type="text" id="choiceB" class="input-field" placeholder="선택 B (예: 짬뽕)">
+            </div>
+            <button class="btn-primary" onclick="decideBalance()">🎲 비서의 즉각 판결 받기</button>
+            <div id="balanceResult" class="result-box" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Chat Assistant -->
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="chat-header-info">
+            <div class="mascot-avatar" style="width:32px; height:32px;">
+              <svg class="mascot-svg">
+                <use id="chatMascotUse" href="#robot-mascot"></use>
+              </svg>
+            </div>
+            <div>
+              <h2>비서 대화창</h2>
+              <span>사소한 결정도 즉시 골라드립니다</span>
+            </div>
+          </div>
+          <span class="badge" style="font-size:0.7rem;">AI 어시스턴트</span>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <div class="message bot">
+            <div class="msg-avatar">🤖</div>
+            <div class="msg-bubble">
+              안녕하세요! 당신만을 위한 결정 비서입니다.<br>
+              <strong>"어떤 선택을 도와드릴까요?"</strong><br>
+              메뉴 선택, 운동법, 공부/업무 순서 등 망설여지는 모든 것을 편하게 물어보세요!
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-chips">
+          <button class="chip-btn" onclick="sendQuickPrompt('오늘 점심 뭐 먹을까?')">🍜 점심 메뉴 골라줘</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('오늘 운동 루틴 어떻게 해?')">💪 운동 루틴 확인</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('주말에 어디 놀러가면 좋아?')">🏞️ 주말 나들이 추천</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('공부랑 운동 중에 뭐 먼저 할까?')">⚖️ 순서 정해줘</button>
+        </div>
+
+        <div class="chat-input-area">
+          <input type="text" id="chatInput" class="input-field" placeholder="어떤 선택을 도와드릴까요? (Enter로 전송)" onkeydown="if(event.key==='Enter') handleChatSend()">
+          <button class="btn-primary" style="padding:0 18px;" onclick="handleChatSend()">전송</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODALS
+       ========================================================================== -->
+
+  <!-- 1. 온보딩 / 프로필 설정 모달 -->
+  <div class="modal-overlay" id="modalOnboarding">
+    <div class="modal-window">
+      <h2 class="modal-title"><span>✨</span> 맞춤 비서 초기 설정</h2>
+      <p class="modal-subtitle">당신에게 딱 맞는 결정을 내려드리기 위해 몇 가지 정보를 알려주세요.</p>
+
+      <!-- 테마 선택 섹션 (시작 화면부터 선택 가능) -->
+      <div class="form-group">
+        <label class="form-label">🎨 선호하는 화면 톤 선택</label>
+        <div class="theme-selector-grid">
+          <div class="theme-card active" id="themeCardBw" onclick="selectOnboardingTheme('bw')">
+            <div class="theme-card-preview" style="background:#17191e; color:#38bdf8; border:1px solid #2e3440;">🤖</div>
+            <div>
+              <div style="font-weight:700; font-size:0.88rem;">모던 블랙 & 화이트</div>
+              <div style="font-size:0.72rem; color:var(--text-muted);">미니멀하고 깔끔한 집중 다크모드</div>
+            </div>
+          </div>
+          <div class="theme-card" id="themeCardPastel" onclick="selectOnboardingTheme('pastel')">
+            <div class="theme-card-preview" style="background:#ffeef2; color:#ff85a1; border:1px solid #f1dbe5;">🐰</div>
+            <div>
+              <div style="font-weight:700; font-size:0.88rem;">파스텔 & 마스코트</div>
+              <div style="font-size:0.72rem; color:var(--text-muted);">귀여운 토끼 비서와 산뜻한 컬러</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 연령대 -->
+      <div class="form-group">
+        <label class="form-label">1. 연령대</label>
+        <div class="option-grid">
+          <div class="option-btn"><input type="radio" name="age" id="age10" value="10대"><label for="age10">10대</label></div>
+          <div class="option-btn"><input type="radio" name="age" id="age20" value="20대" checked><label for="age20">20대</label></div>
+          <div class="option-btn"><input type="radio" name="age" id="age30" value="30대"><label for="age30">30대</label></div>
+          <div class="option-btn"><input type="radio" name="age" id="age40" value="40대+"><label for="age40">40대 이상</label></div>
+        </div>
+      </div>
+
+      <!-- 직업 / 신분 -->
+      <div class="form-group">
+        <label class="form-label">2. 직업 / 활동 형태</label>
+        <div class="option-grid">
+          <div class="option-btn"><input type="radio" name="job" id="jobWorker" value="직장인" checked><label for="jobWorker">직장인 (오피스)</label></div>
+          <div class="option-btn"><input type="radio" name="job" id="jobStudent" value="대학생/수험생"><label for="jobStudent">대학생 / 수험생</label></div>
+          <div class="option-btn"><input type="radio" name="job" id="jobFree" value="프리랜서/재택"><label for="jobFree">프리랜서 / 재택</label></div>
+          <div class="option-btn"><input type="radio" name="job" id="jobActive" value="활동적인 직군"><label for="jobActive">현장 / 서비스직</label></div>
+        </div>
+      </div>
+
+      <!-- 좋아하는 음식 카테고리 (복수 선택) -->
+      <div class="form-group">
+        <label class="form-label">3. 좋아하는 음식 카테고리 (복수 선택 가능)</label>
+        <div class="option-grid">
+          <div class="option-btn"><input type="checkbox" name="foodPref" id="foodKr" value="한식" checked><label for="foodKr">한식 🍚</label></div>
+          <div class="option-btn"><input type="checkbox" name="foodPref" id="foodJp" value="일식" checked><label for="foodJp">일식 🍣</label></div>
+          <div class="option-btn"><input type="checkbox" name="foodPref" id="foodCn" value="중식"><label for="foodCn">중식 🥟</label></div>
+          <div class="option-btn"><input type="checkbox" name="foodPref" id="foodWn" value="양식" checked><label for="foodWn">양식 🍝</label></div>
+          <div class="option-btn"><input type="checkbox" name="foodPref" id="foodAs" value="아시안"><label for="foodAs">아시안 🍜</label></div>
+          <div class="option-btn"><input type="checkbox" name="foodPref" id="foodSl" value="샐러드/클린식"><label for="foodSl">샐러드/클린식 🥗</label></div>
+        </div>
+      </div>
+
+      <!-- 체형 고민 부위 (복수 선택 지원) -->
+      <div class="form-group">
+        <label class="form-label">4. 체형 고민 부위 (복수 선택 가능)</label>
+        <div class="option-grid">
+          <div class="option-btn"><input type="checkbox" name="bodyFocus" id="bodyBelly" value="복부/뱃살" checked><label for="bodyBelly">복부 / 뱃살 ⚡</label></div>
+          <div class="option-btn"><input type="checkbox" name="bodyFocus" id="bodyShoulder" value="어깨/거북목"><label for="bodyShoulder">어깨 / 거북목 🧘</label></div>
+          <div class="option-btn"><input type="checkbox" name="bodyFocus" id="bodyLeg" value="하체/엉덩이"><label for="bodyLeg">하체 / 엉덩이 🏃</label></div>
+          <div class="option-btn"><input type="checkbox" name="bodyFocus" id="bodyStamina" value="전신 체력"><label for="bodyStamina">전신 체력/피로 🔥</label></div>
+        </div>
+      </div>
+
+      <button class="btn-primary" style="width:100%; margin-top:8px; padding:12px;" onclick="saveProfile()">
+        🎉 설정 완료하고 맞춤 추천 시작하기
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. 오늘 메뉴 상세 모달 (팝업창 내에서 즉시 다른 메뉴 추천 지원) -->
+  <div class="modal-overlay" id="modalFood">
+    <div class="modal-window">
+      <button class="modal-close" onclick="closeModal('modalFood')">&times;</button>
+      <h2 class="modal-title">🍱 오늘의 추천 메뉴 상세</h2>
+      <p class="modal-subtitle">회원님의 입맛 선호도를 반영하여 비서가 엄선한 요리입니다.</p>
+
+      <div class="detail-section" id="foodDetailBody">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <!-- 창 내부에서 바로 갱신 -->
+        <button class="btn-primary" style="flex:1;" onclick="reRollFoodInModal()">🎲 이 창에서 다른 메뉴 바로 추천받기</button>
+        <button class="btn-action" onclick="closeModal('modalFood')">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 체형 맞춤 운동 3일 루틴 모달 -->
+  <div class="modal-overlay" id="modalWorkout">
+    <div class="modal-window">
+      <button class="modal-close" onclick="closeModal('modalWorkout')">&times;</button>
+      <h2 class="modal-title">⚡ 고민 부위 맞춤 3일+ 운동 & 식단 루틴</h2>
+      <p class="modal-subtitle" id="workoutModalSubtitle">선택하신 고민 부위를 집중 케어하는 3일 단계별 프로그램입니다.</p>
+
+      <div id="workout3DaysContent">
+        <!-- Rendered by JS: Day 1, Day 2, Day 3 -->
+      </div>
+
+      <div class="detail-section" style="margin-top:10px;">
+        <h4>🥗 함께 지키면 좋은 식단 팁</h4>
+        <p id="workoutDietTip">단백질 중심 섭취와 기상 후 미온수 한 잔을 잊지 마세요!</p>
+      </div>
+
+      <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="closeModal('modalWorkout')">확인 및 운동 시작하기</button>
+    </div>
+  </div>
+
+  <!-- 4. 작업/공부 순서 상세 모달 -->
+  <div class="modal-overlay" id="modalRoutine">
+    <div class="modal-window">
+      <button class="modal-close" onclick="closeModal('modalRoutine')">&times;</button>
+      <h2 class="modal-title">⏱️ 신분/직업 맞춤 생산성 타임블록</h2>
+      <p class="modal-subtitle" id="routineModalSubtitle">에너지 소모를 줄이고 성취감을 극대화하는 실행 순서입니다.</p>
+
+      <div id="routineTimeline" class="detail-section">
+        <!-- Rendered by JS -->
+      </div>
+
+      <button class="btn-primary" style="width:100%;" onclick="closeModal('modalRoutine')">확인</button>
+    </div>
+  </div>
+
+  <!-- 5. 주말 여행지 상세 모달 (사진 및 공식 사이트 링크) -->
+  <div class="modal-overlay" id="modalTravel">
+    <div class="modal-window">
+      <button class="modal-close" onclick="closeModal('modalTravel')">&times;</button>
+      <h2 class="modal-title" id="travelModalTitle">🚗 주말 추천 힐링 스팟</h2>
+      <p class="modal-subtitle" id="travelModalSubtitle">복잡한 생각을 비우고 리프레시할 수 있는 여행지입니다.</p>
+
+      <!-- 여행지 사진 -->
+      <img id="travelModalImg" class="travel-img" src="" alt="여행지 풍경">
+
+      <div class="detail-section">
+        <h4 id="travelSpotName">여행지 이름</h4>
+        <p id="travelSpotDesc" style="margin-bottom:8px; line-height:1.45;"></p>
+        <div style="font-size:0.8rem; color:var(--text-muted);" id="travelSpotTip"></div>
+      </div>
+
+      <!-- 추천 사이트 및 후기 링크 연결 -->
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+        <a id="travelLinkOfficial" href="#" target="_blank" class="btn-primary" style="text-decoration:none; text-align:center;">
+          🌐 공식 관광 안내 사이트 바로가기
+        </a>
+        <a id="travelLinkBlog" href="#" target="_blank" class="btn-action" style="text-decoration:none; justify-content:center;">
+          🔍 실시간 방문 후기 & 코스 검색 (네이버)
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       JAVASCRIPT LOGIC
+       ========================================================================== -->
+  <script>
+    /* --------------------------------------------------------------------------
+       DATABASE
+       -------------------------------------------------------------------------- */
+    const DATA_FOOD = {
+      '한식': [
+        { name: '돼지고기 김치찜 & 계란말이', desc: '깊은 감칠맛의 묵은지와 부드러운 돼지고기, 영양만점 계란말이의 든든한 조합', cal: '680 kcal', tip: '국물 간을 슴슴하게 맞추면 나트륨 걱정 없이 든든합니다.' },
+        { name: '차돌박이 된장찌개 정식', desc: '구수한 된장에 고소한 차돌박이와 애호박, 두부가 듬뿍 들어간 한 상', cal: '620 kcal', tip: '현미밥이나 잡곡밥을 곁들여 식이섬유를 채우세요.' },
+        { name: '뚝배기 소불고기 & 쌈채소', desc: '달콤 짭조름한 양념의 불고기를 신선한 상추, 깻잎에 싸먹는 건강식', cal: '590 kcal', tip: '쌈채소를 먼저 3장 이상 드시면 혈당 스파이크를 방지합니다.' }
+      ],
+      '일식': [
+        { name: '연어 사케동 & 미소된장국', desc: '신선한 생연어의 풍부한 오메가-3와 고소한 밥의 산뜻하고 깔끔한 만남', cal: '540 kcal', tip: '생와사비를 살짝 얹어 산뜻한 풍미를 즐기세요.' },
+        { name: '겉바속촉 수제 돈카츠 정식', desc: '바삭하게 튀겨낸 두툼한 등심과 양배추 샐러드의 정석적인 만족감', cal: '750 kcal', tip: '양배추 샐러드를 먼저 드시면 소화에 큰 도움이 됩니다.' },
+        { name: '따뜻한 온우동과 왕새우튀김', desc: '진한 가쓰오부시 육수에 쫄깃한 면발, 바삭한 새우튀김의 조화', cal: '510 kcal', tip: '시치미를 살짝 뿌려 개운한 끝맛을 더해보세요.' }
+      ],
+      '중식': [
+        { name: '해물 짬뽕 & 찹쌀 탕수육', desc: '불맛 가득한 얼큰한 해물 국물과 쫄깃하고 달콤한 탕수육의 극강 콤보', cal: '820 kcal', tip: '기름진 식사 후엔 따뜻한 자스민차나 보리차를 추천합니다.' },
+        { name: '마파두부 덮밥 & 계란국', desc: '매콤하고 알싸한 두반장 소스에 부드러운 두부가 어우러진 중독적인 한 접시', cal: '580 kcal', tip: '식물성 단백질이 풍부하여 위에 큰 부담이 없습니다.' }
+      ],
+      '양식': [
+        { name: '바질 토마토 파스타 & 리코타 샐러드', desc: '향긋한 바질과 상큼한 토마토소스, 신선한 리코타 치즈의 지중해식 풍미', cal: '580 kcal', tip: '올리브유의 풍미가 좋아 항산화 효과가 뛰어납니다.' },
+        { name: '소고기 부채살 스테이크 & 구운 채소', desc: '겉은 바삭하고 속은 촉촉한 소고기와 구운 아스파라거스, 버섯의 만남', cal: '620 kcal', tip: '고단백 식단으로 근력 운동 전후에 최고의 선택입니다.' }
+      ],
+      '아시안': [
+        { name: '양지 쌀국수 & 스프링롤', desc: '진하게 우려낸 소고기 육수에 숙주가 듬뿍 들어간 속 편안한 쌀국수', cal: '460 kcal', tip: '숙주를 듬뿍 넣고 레몬즙을 뿌려 상큼하게 즐기세요.' },
+        { name: '나시고랭 & 반숙 계란', desc: '특제 소스에 해산물과 밥을 고슬고슬하게 볶아낸 인도네시아식 볶음밥', cal: '610 kcal', tip: '반숙 계란을 톡 터뜨려 비벼 드시면 더욱 부드럽습니다.' }
+      ],
+      '샐러드/클린식': [
+        { name: '수비드 닭가슴살 아보카도 포케볼', desc: '촉촉한 닭가슴살, 슈퍼푸드 아보카도, 현미밥, 채소가 가득한 올인원 볼', cal: '480 kcal', tip: '오리엔탈 드레싱이나 스리라차 마요를 가볍게 곁들이세요.' },
+        { name: '훈제연어 그릭요거트 보울', desc: '훈제연어와 신선한 채소, 꾸덕한 그릭요거트 소스의 라이트한 한 끼', cal: '420 kcal', tip: '더부룩함 제로! 저녁 늦은 시간에도 부담 없습니다.' }
+      ]
+    };
+
+    const DATA_WORKOUT_3DAYS = {
+      '복부/뱃살': [
+        {
+          day: 'Day 1: 코어 활성화 & 하복부 타겟',
+          exercises: ['플랭크 45초 x 3세트', '레그레이즈 15회 x 3세트', '마운틴 클라이머 30초 x 3세트'],
+          tip: '허리가 바닥에서 뜨지 않도록 배꼽을 등 쪽으로 바짝 당기세요.'
+        },
+        {
+          day: 'Day 2: 상복부 & 측면 복사근 집중',
+          exercises: ['크런치 20회 x 3세트', '러시안 트위스트 20회 x 3세트', '바이시클 크런치 15회 x 3세트'],
+          tip: '목을 꺾지 말고 가슴을 천장 방향으로 들어 올리는 느낌에 집중하세요.'
+        },
+        {
+          day: 'Day 3: 전신 체지방 연소 HIIT',
+          exercises: ['버피 테스트 12회 x 3세트', '점핑잭 50회 x 2세트', '플랭크 힙딥 20회 x 3세트'],
+          tip: '짧고 굵게 심박수를 올려 잔여 체지방 연소를 촉진합니다.'
+        }
+      ],
+      '어깨/거북목': [
+        {
+          day: 'Day 1: 굽은 등 & 흉추 가동성 회복',
+          exercises: ['폼롤러 흉추 신전 스트레칭 2분', '월 슬라이드 15회 x 3세트', '캣카우 스트레칭 10회'],
+          tip: '벽에 등과 팔꿈치를 밀착하고 천천히 위아래로 움직이세요.'
+        },
+        {
+          day: 'Day 2: 라운드숄더 교정 & 후면 강화',
+          exercises: ['밴드 풀어파트 20회 x 4세트', 'Y-T-W 레이즈 각 10회 x 3세트', '친인(턱 당기기) 10초 유지 x 5회'],
+          tip: '어깨가 솟아오르지 않게 귀와 어깨를 최대한 멀리 떨어뜨리세요.'
+        },
+        {
+          day: 'Day 3: 승모근 이완 & 등 중심부 코어',
+          exercises: ['슈퍼맨 자세 12회 x 3세트', '버드독 12회 x 3세트', '견갑골 조이기(스캐퓰러 리트랙션) 15회'],
+          tip: '목의 긴장을 풀고 날개뼈 사이를 모으는 힘에 집중하세요.'
+        }
+      ],
+      '하체/엉덩이': [
+        {
+          day: 'Day 1: 둔근 각성 & 힙업 베이스',
+          exercises: ['글루트 브릿지 20회 x 3세트', '와이드 스쿼트 15회 x 3세트', '클램쉘 15회 x 3세트'],
+          tip: '골반을 들어 올릴 때 엉덩이를 쥐어짜듯 1초간 수축하세요.'
+        },
+        {
+          day: 'Day 2: 허벅지 안쪽 & 밸런스 트레이닝',
+          exercises: ['런지 좌우 12회 x 3세트', '사이드 레그레이즈 20회 x 3세트', '스모 데드리프트 15회 x 3세트'],
+          tip: '앞 무릎이 발끝보다 앞으로 나가지 않도록 체중을 뒤꿈치에 두세요.'
+        },
+        {
+          day: 'Day 3: 힙 하이라이트 & 하체 스트레칭',
+          exercises: ['동키킥 15회 x 3세트', '불가리안 스플릿 스쿼트 10회 x 3세트', '비둘기 자세 스트레칭 2분'],
+          tip: '운동 후 고관절과 허벅지 앞뒤를 충분히 이완시켜 부종을 빼주세요.'
+        }
+      ],
+      '전신 체력': [
+        {
+          day: 'Day 1: 상하체 전신 순환 기초체력',
+          exercises: ['맨몸 스쿼트 20회 x 3세트', '무릎 대고 푸시업 12회 x 3세트', '제자리 뛰기 1분'],
+          tip: '호흡을 일정하게 유지하며 온몸의 관절을 부드럽게 쓰세요.'
+        },
+        {
+          day: 'Day 2: 코어 안정성 & 유산소 결합',
+          exercises: ['플랭크 투 푸시업 10회 x 3세트', '점핑 스쿼트 12회 x 3세트', '스파이더맨 플랭크 16회'],
+          tip: '심폐 기능 향상과 척추 기립근 강화에 탁월합니다.'
+        },
+        {
+          day: 'Day 3: 전신 활력 스트레칭 & 쿨다운',
+          exercises: ['태양 예배 자세(수리야 나마스카라) 5세트', '다운독 자세 1분 x 2세트', '폼롤러 전신 마사지 10분'],
+          tip: '피로 누적을 방지하고 근육통을 해소하는 재생 루틴입니다.'
+        }
+      ]
+    };
+
+    const DATA_ROUTINE = {
+      '직장인': {
+        title: '오피스 몰입 & 뇌 피로 분산 루틴',
+        steps: [
+          '☀️ 09:00~10:30 (골든 타임): 집중력이 가장 높은 시간. 기획서·보고서 등 머리 쓰는 핵심 업무 1순위 처리',
+          '☕ 10:30~11:30: 이메일 회신, 가벼운 메신저 소통, 회의 준비 등 커뮤니케이션성 업무 일괄 처리',
+          '🍱 13:00~14:30 (식곤증 방어): 5분간 가벼운 산책 후 루틴한 자료 정리 및 시스템 입력 작업',
+          '🔥 15:00~17:00: 2차 집중 시간. 내일 마감 업무 미리 착수 및 팀 내 일정 조율'
+        ],
+        tip: '50분 집중 후 5분은 반드시 모니터에서 눈을 떼고 먼 곳을 바라보세요.'
+      },
+      '대학생/수험생': {
+        title: '망각 방지 뽀모도로 학습 루틴',
+        steps: [
+          '🧠 1단계 (이해 & 암기): 가장 어려운 전공 과목 또는 암기 영역을 25분 몰입 / 5분 휴식 (4사이클)',
+          '📝 2단계 (문제 풀이): 직접 손으로 문제를 풀고 오답 원인을 형광펜으로 체크하는 적용 훈련',
+          '🎧 3단계 (요약 정리): 오늘 공부한 핵심 키워드 3가지를 백지에 보지 않고 적어보는 인출 연습',
+          '🌙 4단계 (취침 전 10분): 당일 정리한 단어/오답 노트를 빠르게 훑고 수면'
+        ],
+        tip: '공부할 땐 스마트폰을 시야 밖 다른 방에 두는 것만으로 집중력이 30% 증가합니다.'
+      },
+      '프리랜서/재택': {
+        title: '시공간 분리 자기주도 루틴',
+        steps: [
+          '👕 1단계 (모드 전환): 출근복으로 갈아입고 책상 정돈 (뇌에 작업 시작 신호 주기)',
+          '🎯 2단계 (One-Thing): 오늘 반드시 끝내야 할 최우선 과제 1개만 정해 오전 내 80% 완수',
+          '🚶 3단계 (리프레시 산책): 점심 후 15분간 야외 햇빛 쬐기 (생체 리듬 및 도파민 충전)',
+          '📊 4단계 (행정 & 마감): 클라이언트 피드백 반영, 정산, 내일 할 일 To-Do 리스트 작성'
+        ],
+        tip: '작업 공간과 침실을 물리적으로 철저히 분리하세요.'
+      },
+      '활동적인 직군': {
+        title: '신체 에너지 보존 & 효율 루틴',
+        steps: [
+          '🧘 1단계 (부상 방지): 시작 전 발목, 고관절, 허리 5분 동적 스트레칭',
+          '⚡ 2단계 (주요 업무 완수): 체력이 가장 온전한 초반에 육체적/집중력이 필요한 메인 업무 집중',
+          '💧 3단계 (수분 & 전해질): 1시간마다 물 한 컵과 간단한 호흡 조절로 피로 누적 예방',
+          '🛁 4단계 (하체 이완): 퇴근 후 따뜻한 샤워와 다리 올리기 스트레칭으로 붓기 해소'
+        ],
+        tip: '무리한 카페인 섭취 대신 충분한 수분 섭취가 오후 피로를 훨씬 잘 막아줍니다.'
+      }
+    };
+
+    const DATA_TRAVEL = [
+      {
+        title: '춘천 소양강 & 의암호 호수 힐링',
+        theme: '물멍 드라이브 & 카누 체험',
+        desc: '서울/수도권에서 1시간 반이면 닿는 청정 호수 도시! 소양강 스카이워크를 걷고 의암호 물레길에서 카누를 타며 물멍을 즐겨보세요.',
+        tip: '춘천 명동 닭갈비 골목과 구봉산 전망대 카페거리를 함께 묶으면 완벽한 당일치기 코스!',
+        img: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+        officialLink: 'https://tour.chuncheon.go.kr',
+        searchQuery: '춘천 소양강 여행 코스 후기'
+      },
+      {
+        title: '강릉 안목해변 & 솔향 수목원',
+        theme: '바다 멍 & 소나무 숲길 힐링',
+        desc: '동해의 시원한 파도 소리를 들으며 안목 커피거리에서 커피 한 잔, 그리고 울창한 솔향 수목원에서 피톤치드를 가득 마셔보세요.',
+        tip: 'KTX 강릉선으로 뚜벅이 여행도 매우 편리합니다. 강릉 중앙시장 먹거리 탐방도 필수!',
+        img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+        officialLink: 'https://www.gn.go.kr/tour/index.do',
+        searchQuery: '강릉 안목해변 1박2일 코스 후기'
+      },
+      {
+        title: '담양 죽녹원 & 메타세쿼이아길',
+        theme: '초록빛 대숲 힐링 산책',
+        desc: '사계절 푸른 대나무 숲길을 걸으며 일상의 잡념을 비워내세요. 메타세쿼이아 가로수길은 인생샷 명소로 유명합니다.',
+        tip: '담양 떡갈비와 시원한 대통밥 한 상으로 주말 미식 여행까지 함께 챙겨보세요.',
+        img: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80',
+        officialLink: 'https://www.damyang.go.kr/tour',
+        searchQuery: '담양 죽녹원 메타세콰이어길 여행 후기'
+      },
+      {
+        title: '단양 패러글라이딩 & 도담삼봉',
+        theme: '스릴과 절경의 힐링',
+        desc: '남한강 절경 위에 우뚝 솟은 도담삼봉을 구경하고, 탁 트인 하늘을 나는 패러글라이딩으로 스트레스를 단번에 날려버리세요.',
+        tip: '만천하 스카이워크와 단양 구경시장 마늘순대, 마늘만두도 절대 놓칠 수 없는 묘미!',
+        img: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80',
+        officialLink: 'https://www.danyang.go.kr/tour',
+        searchQuery: '단양 도담삼봉 여행 코스 후기'
+      }
+    ];
+
+    /* --------------------------------------------------------------------------
+       STATE
+       -------------------------------------------------------------------------- */
+    let userProfile = {
+      theme: 'bw',
+      age: '20대',
+      job: '직장인',
+      foods: ['한식', '일식'],
+      bodies: ['복부/뱃살'] // 복수 선택 지원
+    };
+
+    let selectedFood = null;
+    let selectedTravel = DATA_TRAVEL[0];
+    let tempSelectedTheme = 'bw';
+
+    /* --------------------------------------------------------------------------
+       INIT & LOCAL STORAGE
+       -------------------------------------------------------------------------- */
+    window.addEventListener('DOMContentLoaded', () => {
+      loadProfile();
+      applyTheme(userProfile.theme);
+      renderDashboard();
+      generateSchedule();
+
+      // 첫 사용자 온보딩 표시
+      if (!localStorage.getItem('my_assistant_profile_saved')) {
+        openOnboardingModal();
+      }
+    });
+
+    function loadProfile() {
+      const saved = localStorage.getItem('my_assistant_profile');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          userProfile = Object.assign(userProfile, parsed);
+          // 이전 단일 값 호환 처리
+          if (parsed.body && !parsed.bodies) {
+            userProfile.bodies = [parsed.body];
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      tempSelectedTheme = userProfile.theme || 'bw';
+    }
+
+    function saveProfile() {
+      // 1. 테마 적용
+      userProfile.theme = tempSelectedTheme;
+      applyTheme(userProfile.theme);
+
+      // 2. 연령대
+      const ageEl = document.querySelector('input[name="age"]:checked');
+      if (ageEl) userProfile.age = ageEl.value;
+
+      // 3. 직업
+      const jobEl = document.querySelector('input[name="job"]:checked');
+      if (jobEl) userProfile.job = jobEl.value;
+
+      // 4. 음식 (체크박스 복수)
+      const foodEls = document.querySelectorAll('input[name="foodPref"]:checked');
+      const foods = Array.from(foodEls).map(el => el.value);
+      userProfile.foods = foods.length > 0 ? foods : ['한식'];
+
+      // 5. 체형 고민 부위 (체크박스 복수 선택)
+      const bodyEls = document.querySelectorAll('input[name="bodyFocus"]:checked');
+      const bodies = Array.from(bodyEls).map(el => el.value);
+      userProfile.bodies = bodies.length > 0 ? bodies : ['복부/뱃살'];
+
+      localStorage.setItem('my_assistant_profile', JSON.stringify(userProfile));
+      localStorage.setItem('my_assistant_profile_saved', 'true');
+
+      closeModal('modalOnboarding');
+      renderDashboard();
+      generateSchedule();
+
+      addBotMessage(`설정이 성공적으로 저장되었습니다! <strong>${userProfile.job}</strong> 맞춤 일정과 <strong>${userProfile.bodies.join(', ')}</strong> 집중 관리 솔루션으로 하루를 스마트하게 비서해 드릴게요! ✨`);
+    }
+
+    /* --------------------------------------------------------------------------
+       THEME MANAGEMENT
+       -------------------------------------------------------------------------- */
+    function applyTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      userProfile.theme = theme;
+
+      const headerUse = document.getElementById('headerMascotUse');
+      const chatUse = document.getElementById('chatMascotUse');
+      const btnIcon = document.getElementById('themeBtnIcon');
+      const btnText = document.getElementById('themeBtnText');
+
+      if (theme === 'pastel') {
+        headerUse.setAttribute('href', '#bunny-mascot');
+        chatUse.setAttribute('href', '#bunny-mascot');
+        btnIcon.textContent = '🐰';
+        btnText.textContent = '블랙/화이트로 전환';
+      } else {
+        headerUse.setAttribute('href', '#robot-mascot');
+        chatUse.setAttribute('href', '#robot-mascot');
+        btnIcon.textContent = '🎨';
+        btnText.textContent = '파스텔톤으로 전환';
+      }
+    }
+
+    function toggleTheme() {
+      const next = userProfile.theme === 'bw' ? 'pastel' : 'bw';
+      applyTheme(next);
+      localStorage.setItem('my_assistant_profile', JSON.stringify(userProfile));
+    }
+
+    function selectOnboardingTheme(theme) {
+      tempSelectedTheme = theme;
+      document.getElementById('themeCardBw').classList.toggle('active', theme === 'bw');
+      document.getElementById('themeCardPastel').classList.toggle('active', theme === 'pastel');
+      applyTheme(theme);
+    }
+
+    /* --------------------------------------------------------------------------
+       DASHBOARD RENDERING
+       -------------------------------------------------------------------------- */
+    function renderDashboard() {
+      // 1. 상단 태그 렌더링
+      const tagsContainer = document.getElementById('profileTags');
+      tagsContainer.innerHTML = `
+        <span class="badge">👤 ${userProfile.age}</span>
+        <span class="badge">💼 ${userProfile.job}</span>
+        <span class="badge">🍽️ ${userProfile.foods.join('/')}</span>
+        <span class="badge">🎯 고민: ${userProfile.bodies.join(', ')}</span>
+        <span class="badge">🎨 ${userProfile.theme === 'pastel' ? '파스텔 래빗' : '모던 봇'}</span>
+      `;
+
+      // 2. 오늘 메뉴 선정
+      pickInitialFood();
+
+      // 3. 체형 맞춤 운동 카드
+      document.getElementById('cardWorkoutTitle').textContent = `${userProfile.bodies.join('+')} 집중 루틴`;
+      document.getElementById('cardWorkoutDesc').textContent = `${userProfile.bodies[0]} 등 고민 부위를 단계적으로 해결하는 3일+ 운동 & 식단 플랜입니다.`;
+
+      // 4. 작업/공부 루틴 카드
+      const routine = DATA_ROUTINE[userProfile.job] || DATA_ROUTINE['기타'];
+      document.getElementById('cardRoutineTitle').textContent = `${userProfile.job} 몰입 순서`;
+      document.getElementById('cardRoutineDesc').textContent = routine.title;
+
+      // 5. 주말 여행지 선정
+      selectedTravel = DATA_TRAVEL[Math.floor(Math.random() * DATA_TRAVEL.length)];
+      document.getElementById('cardTravelTitle').textContent = selectedTravel.title.split('&')[0];
+      document.getElementById('cardTravelDesc').textContent = selectedTravel.theme;
+    }
+
+    function pickInitialFood() {
+      const prefCategories = userProfile.foods;
+      const pool = [];
+      prefCategories.forEach(cat => {
+        if (DATA_FOOD[cat]) pool.push(...DATA_FOOD[cat]);
+      });
+
+      if (pool.length === 0) pool.push(...DATA_FOOD['한식']);
+      selectedFood = pool[Math.floor(Math.random() * pool.length)];
+
+      document.getElementById('cardFoodTitle').textContent = selectedFood.name.split('&')[0];
+      document.getElementById('cardFoodDesc').textContent = selectedFood.desc;
+    }
+
+    /* --------------------------------------------------------------------------
+       MODAL CONTROLLERS
+       -------------------------------------------------------------------------- */
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function openOnboardingModal() {
+      tempSelectedTheme = userProfile.theme || 'bw';
+      selectOnboardingTheme(tempSelectedTheme);
+
+      // 연령대 세팅
+      const ageInput = document.querySelector(`input[name="age"][value="${userProfile.age}"]`);
+      if (ageInput) ageInput.checked = true;
+
+      // 직업 세팅
+      const jobInput = document.querySelector(`input[name="job"][value="${userProfile.job}"]`);
+      if (jobInput) jobInput.checked = true;
+
+      // 음식 세팅
+      document.querySelectorAll('input[name="foodPref"]').forEach(cb => {
+        cb.checked = userProfile.foods.includes(cb.value);
+      });
+
+      // 체형 고민 부위 세팅 (복수 체크)
+      document.querySelectorAll('input[name="bodyFocus"]').forEach(cb => {
+        cb.checked = userProfile.bodies.includes(cb.value);
+      });
+
+      openModal('modalOnboarding');
+    }
+
+    // 1. 메뉴 모달 열기 & 내부 재추천
+    function openFoodModal() {
+      renderFoodDetailView();
+      openModal('modalFood');
+    }
+
+    function renderFoodDetailView() {
+      const box = document.getElementById('foodDetailBody');
+      box.innerHTML = `
+        <h4 style="font-size:1.15rem; color:var(--text-main); margin-bottom:8px;">🍴 ${selectedFood.name}</h4>
+        <p style="margin-bottom:10px; font-size:0.9rem; line-height:1.5;">${selectedFood.desc}</p>
+        <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+          <span class="badge" style="background:var(--accent-soft);">🔥 예상 칼로리: ${selectedFood.cal}</span>
+          <span class="badge">💡 영양 밸런스 완료</span>
+        </div>
+        <div style="padding:10px; background:var(--bg-card); border-radius:var(--radius-sm); border:1px dashed var(--border-color); font-size:0.83rem;">
+          <strong>🎯 비서의 섭취 꿀팁:</strong> ${selectedFood.tip}
+        </div>
+      `;
+    }
+
+    // [요청 반영] 모달 창 내부에서 바로 다른 메뉴를 추천하여 띄워줌
+    function reRollFoodInModal() {
+      const prefCategories = userProfile.foods;
+      const pool = [];
+      prefCategories.forEach(cat => {
+        if (DATA_FOOD[cat]) pool.push(...DATA_FOOD[cat]);
+      });
+      if (pool.length === 0) pool.push(...DATA_FOOD['한식']);
+
+      // 현재 메뉴와 다른 메뉴 선정
+      let nextFood = pool[Math.floor(Math.random() * pool.length)];
+      if (pool.length > 1) {
+        while (nextFood.name === selectedFood.name) {
+          nextFood = pool[Math.floor(Math.random() * pool.length)];
+        }
+      }
+      selectedFood = nextFood;
+
+      // 메인 대시보드 카드 텍스트 업데이트
+      document.getElementById('cardFoodTitle').textContent = selectedFood.name.split('&')[0];
+      document.getElementById('cardFoodDesc').textContent = selectedFood.desc;
+
+      // 모달창 뷰 즉시 다시 렌더링
+      renderFoodDetailView();
+    }
+
+    // 2. 운동 모달 (복수 고민 부위 3일+ 통합 루틴)
+    function openWorkoutModal() {
+      const container = document.getElementById('workout3DaysContent');
+      const subtitle = document.getElementById('workoutModalSubtitle');
+      subtitle.textContent = `선택하신 고민 부위 [${userProfile.bodies.join(', ')}] 맞춤 3일+ 집중 단계 플랜입니다.`;
+
+      // 선택된 모든 고민 부위 루틴 통합 수집
+      let html = '';
+      for (let dayIdx = 0; dayIdx < 3; dayIdx++) {
+        const dayTitle = `Day ${dayIdx + 1}: ${dayIdx === 0 ? '기초 활성화 & 타겟 자극' : (dayIdx === 1 ? '심화 강화 & 부위별 밸런스' : '전신 순환 & 체지방 연소 HIIT')}`;
+        
+        let allExercises = [];
+        let tips = [];
+
+        userProfile.bodies.forEach(b => {
+          const list = DATA_WORKOUT_3DAYS[b] || DATA_WORKOUT_3DAYS['복부/뱃살'];
+          const dayData = list[dayIdx] || list[0];
+          allExercises.push(...dayData.exercises.map(ex => `[${b}] ${ex}`));
+          tips.push(dayData.tip);
+        });
+
+        html += `
+          <div class="detail-section" style="margin-bottom:12px;">
+            <h4>${dayTitle}</h4>
+            <div style="display:flex; flex-direction:column; gap:6px; margin:8px 0;">
+              ${allExercises.map(ex => `<div class="schedule-item"><span>🏃 ${ex}</span><span class="badge">완료 체크</span></div>`).join('')}
+            </div>
+            <div style="font-size:0.78rem; color:var(--text-muted); margin-top:6px;">
+              💡 <strong>핵심 팁:</strong> ${tips[0]}
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+      document.getElementById('workoutDietTip').textContent = `
+        ${userProfile.bodies.includes('복부/뱃살') ? '저녁 탄수화물 섭취를 반 공기로 줄이고, ' : ''}
+        운동 30분 전 미온수 300ml 섭취와 운동 후 닭가슴살/달걀 등 양질의 단백질 20g 보충을 권장합니다!
+      `;
+
+      openModal('modalWorkout');
+    }
+
+    // 3. 작업/공부 루틴 모달
+    function openRoutineModal() {
+      const routine = DATA_ROUTINE[userProfile.job] || DATA_ROUTINE['기타'];
+      document.getElementById('routineModalSubtitle').textContent = `${userProfile.job} 맞춤 - ${routine.title}`;
+
+      const timelineBox = document.getElementById('routineTimeline');
+      timelineBox.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${routine.steps.map(step => `
+            <div style="padding:10px; background:var(--bg-card); border-radius:var(--radius-sm); border:1px solid var(--border-color); line-height:1.45;">
+              ${step}
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top:12px; font-weight:700; color:var(--accent);">
+          ⚡ 비서의 생산성 조언: ${routine.tip}
+        </div>
+      `;
+
+      openModal('modalRoutine');
+    }
+
+    // 4. 여행지 상세 모달 (사진 + 공식 링크)
+    function openTravelModal() {
+      const t = selectedTravel;
+      document.getElementById('travelModalTitle').textContent = `🚗 ${t.title}`;
+      document.getElementById('travelModalSubtitle').textContent = `테마: ${t.theme}`;
+      document.getElementById('travelModalImg').src = t.img;
+      document.getElementById('travelSpotName').textContent = t.title;
+      document.getElementById('travelSpotDesc').textContent = t.desc;
+      document.getElementById('travelSpotTip').innerHTML = `<strong>💡 현지 코스 꿀팁:</strong> ${t.tip}`;
+
+      // 바로 확인 가능한 링크 연결
+      const officialBtn = document.getElementById('travelLinkOfficial');
+      officialBtn.href = t.officialLink;
+
+      const blogBtn = document.getElementById('travelLinkBlog');
+      blogBtn.href = `https://search.naver.com/search.naver?query=${encodeURIComponent(t.searchQuery)}`;
+
+      openModal('modalTravel');
+    }
+
+    /* --------------------------------------------------------------------------
+       TOOLS PANEL LOGIC
+       -------------------------------------------------------------------------- */
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+    }
+
+    // 1. 냉장고 재료 맞춤 추천
+    function recommendByFridge() {
+      const input = document.getElementById('fridgeInput').value.trim();
+      const resBox = document.getElementById('fridgeResult');
+
+      if (!input) {
+        alert('냉장고 속 재료를 입력해주세요!');
+        return;
+      }
+
+      const userIngredients = input.split(/[,，\s]+/).filter(Boolean);
+      const recipes = [
+        { name: '김치 계란 볶음밥', match: ['김치', '계란', '밥', '파'], desc: '팬에 파기름을 내고 김치와 밥을 볶은 뒤 반숙 계란후라이를 얹으세요.' },
+        { name: '초간단 두부김치 조림', match: ['두부', '김치', '돼지고기', '양파'], desc: '들기름에 볶은 김치와 따뜻하게 데친 두부를 곁들여 먹는 훌륭한 고단백 저탄수 식사!' },
+        { name: '채소 가득 계란말이 & 된장국', match: ['계란', '양파', '당근', '된장', '파'], desc: '남은 채소를 다져 부드러운 계란말이를 만들고 따뜻한 된장국을 끓이세요.' },
+        { name: '양파 참치 덮밥', match: ['참치', '양파', '계란', '간장'], desc: '양파를 간장/올리고당에 살짝 조린 뒤 참치와 계란 노른자를 밥 위에 올려 비벼 드세요.' }
+      ];
+
+      let best = recipes[0];
+      let bestCount = -1;
+
+      recipes.forEach(r => {
+        let count = 0;
+        r.match.forEach(m => {
+          if (userIngredients.some(ui => ui.includes(m) || m.includes(ui))) count++;
+        });
+        if (count > bestCount) {
+          bestCount = count;
+          best = r;
+        }
+      });
+
+      resBox.style.display = 'block';
+      resBox.innerHTML = `
+        <strong>💡 비서의 냉장고 솔루션:</strong> [${best.name}]<br>
+        <span style="color:var(--text-muted); font-size:0.8rem;">입력 재료(${userIngredients.join(', ')})를 활용한 최적의 결정입니다.</span>
+        <p style="margin-top:6px;">${best.desc}</p>
+      `;
+    }
+
+    // 2. 3일치 운동/식단 스케줄 동적 생성
+    function generateSchedule() {
+      const list = document.getElementById('schedulePlanList');
+      if (!list) return;
+
+      let html = '';
+      userProfile.bodies.forEach(b => {
+        const routines = DATA_WORKOUT_3DAYS[b] || DATA_WORKOUT_3DAYS['복부/뱃살'];
+        html += `
+          <div style="font-weight:700; font-size:0.84rem; color:var(--accent); margin-top:6px;">🎯 [${b}] 집중 플랜</div>
+          ${routines.map(r => `
+            <div class="schedule-item" style="flex-direction:column; align-items:flex-start; gap:4px;">
+              <div style="display:flex; justify-content:space-between; width:100%;">
+                <strong style="font-size:0.84rem;">${r.day.split(':')[0]}</strong>
+                <span style="font-size:0.8rem; font-weight:600;">${r.exercises[0].split('-')[0]}</span>
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">👉 ${r.tip}</div>
+            </div>
+          `).join('')}
+        `;
+      });
+
+      list.innerHTML = html;
+    }
+
+    // 3. 작업 우선순위 도출기
+    function sortPriorities() {
+      const input = document.getElementById('todoInput').value.trim();
+      const resBox = document.getElementById('priorityResult');
+
+      if (!input) {
+        alert('해야 할 일들을 적어주세요!');
+        return;
+      }
+
+      const tasks = input.split(/[,，\n]+/).map(t => t.trim()).filter(Boolean);
+      if (tasks.length === 0) return;
+
+      const sorted = tasks.map((task, idx) => {
+        let priority = idx === 0 ? '🔥 긴급/최우선 (지금 즉시)' : (idx === 1 ? '⚡ 2순위 (오전 중 완료)' : '🌱 3순위 (오후 몰아서)');
+        return `<div class="schedule-item"><span><strong>${idx + 1}. ${task}</strong></span><span class="badge">${priority}</span></div>`;
+      }).join('');
+
+      resBox.style.display = 'block';
+      resBox.innerHTML = `
+        <strong>📋 ${userProfile.job} 맞춤 생산성 실행 순서:</strong>
+        <div style="margin-top:8px;">${sorted}</div>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:8px;">* 뽀모도로(25분 몰입 후 5분 휴식) 사이클을 지키면 피로감이 반으로 줄어듭니다!</p>
+      `;
+    }
+
+    // 4. 양자택일 밸런스 결정
+    function decideBalance() {
+      const a = document.getElementById('choiceA').value.trim();
+      const b = document.getElementById('choiceB').value.trim();
+      const resBox = document.getElementById('balanceResult');
+
+      if (!a || !b) {
+        alert('고민되는 두 가지 항목을 모두 적어주세요!');
+        return;
+      }
+
+      const picked = Math.random() < 0.5 ? a : b;
+      const reasons = [
+        '지금 직관적으로 가장 끌리는 선택입니다. 후회 없이 직진하세요!',
+        '오늘의 에너지와 기운에 더 큰 활력을 불어넣어 줄 선택입니다.',
+        '고민하느라 쓴 뇌 에너지가 아깝습니다! 비서가 보증하니 이걸로 결정하세요.',
+        '두 개 중 망설여질 땐 바로 이것이 정답입니다.'
+      ];
+      const randomReason = reasons[Math.floor(Math.random() * reasons.length)];
+
+      resBox.style.display = 'block';
+      resBox.innerHTML = `
+        <div style="font-size:1.1rem; font-weight:800; color:var(--accent);">👑 비서의 최종 선택: [ ${picked} ]</div>
+        <div style="margin-top:4px; font-size:0.83rem;">${randomReason}</div>
+      `;
+    }
+
+    /* --------------------------------------------------------------------------
+       비서 대화창 (Chat Assistant) 로직
+       -------------------------------------------------------------------------- */
+    function sendQuickPrompt(text) {
+      document.getElementById('chatInput').value = text;
+      handleChatSend();
+    }
+
+    function handleChatSend() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      addUserMessage(text);
+      input.value = '';
+
+      setTimeout(() => {
+        respondBot(text);
+      }, 300);
+    }
+
+    function addUserMessage(text) {
+      const chat = document.getElementById('chatMessages');
+      const msg = document.createElement('div');
+      msg.className = 'message user';
+      msg.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function addBotMessage(text) {
+      const chat = document.getElementById('chatMessages');
+      const msg = document.createElement('div');
+      msg.className = 'message bot';
+      msg.innerHTML = `
+        <div class="msg-avatar">${userProfile.theme === 'pastel' ? '🐰' : '🤖'}</div>
+        <div class="msg-bubble">${text}</div>
+      `;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function respondBot(query) {
+      const q = query.toLowerCase();
+
+      if (q.includes('점심') || q.includes('저녁') || q.includes('메뉴') || q.includes('먹')) {
+        const pool = [];
+        userProfile.foods.forEach(f => {
+          if (DATA_FOOD[f]) pool.push(...DATA_FOOD[f]);
+        });
+        const pick = (pool.length > 0 ? pool : DATA_FOOD['한식'])[Math.floor(Math.random() * (pool.length || 3))];
+        addBotMessage(`오늘 메뉴로 <strong>[${pick.name}]</strong> 어떠세요?<br>${pick.desc}<br><span style="font-size:0.75rem; color:var(--text-muted);">Tip: ${pick.tip}</span>`);
+      } 
+      else if (q.includes('운동') || q.includes('체형') || q.includes('살') || q.includes('루틴')) {
+        addBotMessage(`회원님의 고민 부위 <strong>[${userProfile.bodies.join(', ')}]</strong>에 맞춘 3일 플랜이 준비되어 있습니다!<br>상단의 <strong>[체형 집중 운동] 카드</strong>를 누르면 팝업에서 상세 3일치 운동 세트와 식단 가이드를 바로 확인하실 수 있어요.`);
+      }
+      else if (q.includes('여행') || q.includes('주말') || q.includes('놀러') || q.includes('나들이')) {
+        const t = selectedTravel;
+        addBotMessage(`이번 주말엔 <strong>[${t.title}]</strong> 추천합니다! 🚗<br>• 테마: ${t.theme}<br>• 상단의 <strong>[주말 힐링 스팟] 카드</strong>를 누르시면 현장 사진과 공식 관광 사이트 바로가기를 확인하실 수 있습니다!`);
+      }
+      else if (q.includes('순서') || q.includes('할일') || q.includes('공부') || q.includes('업무') || q.includes('작업')) {
+        const r = DATA_ROUTINE[userProfile.job] || DATA_ROUTINE['기타'];
+        addBotMessage(`<strong>${userProfile.job}</strong> 맞춤 실행 전략입니다:<br>1. 가장 뇌가 맑을 때 핵심 1가지 집중 끝내기<br>2. 그 후 단순 메일/정리 업무 몰아하기<br>3. 50분 집중 후 10분 스트레칭 규칙을 지켜보세요!`);
+      }
+      else if (q.includes('vs') || q.includes('골라') || q.includes('선택')) {
+        const parts = query.split(/vs|또는|혹은/i);
+        if (parts.length >= 2) {
+          const opt1 = parts[0].trim();
+          const opt2 = parts[1].trim();
+          const chosen = Math.random() < 0.5 ? opt1 : opt2;
+          addBotMessage(`고민할 시간도 아깝습니다! 제 선택은 무조건 <strong>[${chosen}]</strong> 입니다. 직진하세요! 🎯`);
+        } else {
+          addBotMessage(`결정하기 어려운 두 가지를 "A vs B" 형태로 질문해 주시면 제가 단호하게 하나를 픽해 드릴게요!`);
+        }
+      }
+      else {
+        addBotMessage(`"${escapeHtml(query)}"에 대해 고민 중이시군요!<br>결정 장애가 올 땐 <strong>'지금 당장 5초 안에 선택했을 때 마음이 더 편한 쪽'</strong>을 고르는 것이 늘 정답입니다. 메뉴 추천, 3일 운동 루틴, 주말 여행지 등 언제든 편하게 물어보세요!`);
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+  </script>
+</body>
+</html>
